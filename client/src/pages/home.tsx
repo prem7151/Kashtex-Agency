@@ -15,6 +15,7 @@ export default function Home() {
       
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-background py-20 lg:py-32">
+        <div className="absolute inset-0 bg-chex-pattern pointer-events-none" />
         <div className="container px-4 md:px-6 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="flex flex-col gap-6 animate-in slide-in-from-left-5 duration-700">

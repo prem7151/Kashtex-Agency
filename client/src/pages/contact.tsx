@@ -75,8 +75,9 @@ export default function Contact() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-16 bg-muted/5">
-        <div className="container px-4">
+      <main className="flex-1 py-16 bg-muted/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-chex-pattern pointer-events-none opacity-[0.02]" />
+        <div className="container px-4 relative z-10">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-heading font-bold mb-4">Contact & Appointments</h1>

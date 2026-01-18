@@ -51,8 +51,9 @@ export default function Services() {
       <Navbar />
       
       <main className="flex-1">
-        <div className="bg-muted/30 py-20">
-          <div className="container px-4 text-center">
+        <div className="relative bg-muted/30 py-20 overflow-hidden">
+          <div className="absolute inset-0 bg-grid-pattern pointer-events-none" />
+          <div className="container px-4 text-center relative z-10">
             <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6">Our Services</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               We provide comprehensive web solutions tailored to your specific business needs. 

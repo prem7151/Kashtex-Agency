@@ -76,8 +76,9 @@ export default function Pricing() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-20 bg-muted/10">
-        <div className="container px-4">
+      <main className="flex-1 py-20 bg-muted/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-[0.04]" />
+        <div className="container px-4 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h1 className="text-4xl font-heading font-bold mb-4">Transparent Pricing</h1>
             <p className="text-muted-foreground text-lg">

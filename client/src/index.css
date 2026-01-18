@@ -117,4 +117,26 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle, var(--color-primary) 1px, transparent 1px);
+    background-size: 24px 24px;
+    opacity: 0.05;
+  }
+
+  .bg-chex-pattern {
+    background-image: linear-gradient(45deg, var(--color-primary) 25%, transparent 25%), 
+                      linear-gradient(-45deg, var(--color-primary) 25%, transparent 25%), 
+                      linear-gradient(45deg, transparent 75%, var(--color-primary) 75%), 
+                      linear-gradient(-45deg, transparent 75%, var(--color-primary) 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+    opacity: 0.03;
+  }
+
+  .bg-dots-pattern {
+    background-image: m-radial-gradient(circle, var(--color-primary) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.05;
+  }
 }

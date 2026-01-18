@@ -9,8 +9,9 @@ export default function About() {
       <Navbar />
       
       <main className="flex-1">
-        <section className="py-20 bg-background">
-          <div className="container px-4 max-w-4xl mx-auto">
+        <section className="relative py-20 bg-background overflow-hidden">
+          <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-[0.03]" />
+          <div className="container px-4 max-w-4xl mx-auto relative z-10">
             <h1 className="text-4xl md:text-5xl font-heading font-bold mb-8 text-center">About Kashtex</h1>
             
             <div className="prose prose-zinc dark:prose-invert max-w-none text-lg leading-relaxed text-muted-foreground">
