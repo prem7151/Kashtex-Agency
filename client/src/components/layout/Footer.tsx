@@ -29,7 +29,7 @@ export default function Footer() {
               <li><Link href="/about"><a className="hover:text-primary transition-colors">About Us</a></Link></li>
               <li><Link href="/portfolio"><a className="hover:text-primary transition-colors">Portfolio</a></Link></li>
               <li><Link href="/contact"><a className="hover:text-primary transition-colors">Contact</a></Link></li>
-              <li><Link href="/admin/dashboard"><a className="hover:text-primary transition-colors">Admin Login</a></Link></li>
+              <li><Link href="/admin/login"><a className="hover:text-primary transition-colors">Admin Login</a></Link></li>
             </ul>
           </div>
 

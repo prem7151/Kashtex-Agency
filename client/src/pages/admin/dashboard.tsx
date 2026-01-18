@@ -47,9 +47,9 @@ export default function AdminDashboard() {
           </Button>
         </nav>
         <div className="p-4 border-t">
-          <Link href="/">
+          <Link href="/admin/login">
             <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50">
-              <LogOut className="mr-2 h-4 w-4" /> Exit
+              <LogOut className="mr-2 h-4 w-4" /> Logout
             </Button>
           </Link>
         </div>

@@ -6,16 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Loader2 } from "lucide-react";
+import { Mail, Phone, MapPin, Loader2, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   service: z.string().min(1, "Please select a service"),
+  date: z.date({
+    required_error: "Please select a date for your appointment",
+  }),
+  time: z.string().min(1, "Please select a time"),
   message: z.string().min(10, "Message must be at least 10 characters"),
 });
 
@@ -27,6 +35,7 @@ export default function Contact() {
       name: "",
       email: "",
       service: "",
+      time: "",
       message: "",
     },
   });
@@ -35,13 +44,18 @@ export default function Contact() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
     
-    console.log("Form submitted:", values);
+    console.log("Appointment Booked:", values);
     toast({
-      title: "Message Sent",
-      description: "Thank you for contacting us. We will get back to you shortly.",
+      title: "Appointment Requested",
+      description: `Confirmation sent to ${values.email}. We've also notified our team.`,
     });
     form.reset();
   };
+
+  const timeSlots = [
+    "09:00 AM", "10:00 AM", "11:00 AM", 
+    "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -53,10 +67,9 @@ export default function Contact() {
             {/* Contact Info */}
             <div className="space-y-8">
               <div>
-                <h1 className="text-4xl font-heading font-bold mb-4">Get in Touch</h1>
+                <h1 className="text-4xl font-heading font-bold mb-4">Book an Appointment</h1>
                 <p className="text-muted-foreground text-lg">
-                  Have a project in mind? Fill out the form or reach out to us directly. 
-                  We're always ready to discuss new ideas.
+                  Ready to start? Select a time and date that works for you, and we'll confirm via email.
                 </p>
               </div>
 
@@ -67,8 +80,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <h3 className="font-semibold mb-1">Email</h3>
-                    <p className="text-muted-foreground">siteveraa@gmail.com</p>
-                    <p className="text-xs text-muted-foreground mt-1">Response time: Within 24 hours</p>
+                    <p className="text-muted-foreground">kashtex1@gmail.com</p>
                   </div>
                 </div>
 
@@ -79,18 +91,6 @@ export default function Contact() {
                   <div>
                     <h3 className="font-semibold mb-1">Phone</h3>
                     <p className="text-muted-foreground">+91 8200369078</p>
-                    <p className="text-xs text-muted-foreground mt-1">Mon-Fri, 9am - 6pm</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <MapPin className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Location</h3>
-                    <p className="text-muted-foreground">Online-only Agency</p>
-                    <p className="text-xs text-muted-foreground mt-1">Serving clients globally</p>
                   </div>
                 </div>
               </div>
@@ -100,40 +100,42 @@ export default function Contact() {
             <div className="bg-card border rounded-xl p-6 sm:p-8 shadow-sm">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Your Name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your Name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="your@email.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input placeholder="your@email.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
                     name="service"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Service Interested In</FormLabel>
+                        <FormLabel>Service</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -145,8 +147,6 @@ export default function Contact() {
                             <SelectItem value="redesign">Website Redesign</SelectItem>
                             <SelectItem value="ecommerce">E-commerce Store</SelectItem>
                             <SelectItem value="webapp">Custom Web App</SelectItem>
-                            <SelectItem value="maintenance">Maintenance</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -154,16 +154,83 @@ export default function Contact() {
                     )}
                   />
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="date"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>Date</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date < new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="time"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Time</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select time" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {timeSlots.map(slot => (
+                                <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
                     name="message"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Message</FormLabel>
+                        <FormLabel>Project Details</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Tell us about your project requirements..." 
-                            className="min-h-[120px]"
+                            placeholder="Tell us about your project..." 
+                            className="min-h-[100px]"
                             {...field} 
                           />
                         </FormControl>
@@ -175,10 +242,10 @@ export default function Contact() {
                   <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...
                       </>
                     ) : (
-                      "Send Message"
+                      "Schedule Appointment"
                     )}
                   </Button>
                 </form>
