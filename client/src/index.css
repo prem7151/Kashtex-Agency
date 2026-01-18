@@ -50,23 +50,27 @@
   --primary-foreground: 0 0% 98%;
   
   /* Secondary: Very Light Sage */
-  --secondary: 150 20% 96%;
+  --secondary: 150 20% 94%;
   --secondary-foreground: 160 40% 10%;
   
   /* Muted */
-  --muted: 150 15% 95%;
+  --muted: 150 15% 92%;
   --muted-foreground: 160 10% 40%;
   
   /* Accent: Modern Light Green (Mint/Sage) */
-  --accent: 142 45% 92%;
+  --accent: 142 45% 90%;
   --accent-foreground: 142 60% 15%;
   
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
   
-  --border: 150 15% 90%;
-  --input: 150 15% 90%;
+  --border: 150 15% 85%;
+  --input: 150 15% 85%;
   --ring: 142 60% 45%;
+
+  /* Dynamic Contrast Backgrounds */
+  --contrast-bg: 160 10% 12%;
+  --contrast-foreground: 150 20% 96%;
   
   --radius: 0.5rem;
 }

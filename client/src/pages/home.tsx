@@ -56,27 +56,28 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 bg-muted/30">
-        <div className="container px-4">
+      <section className="py-24 bg-[hsl(var(--contrast-bg))] text-[hsl(var(--contrast-foreground))] relative overflow-hidden">
+        <div className="absolute inset-0 bg-modern-dots opacity-10 pointer-events-none" />
+        <div className="container px-4 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <h2 className="text-3xl font-heading font-bold mb-4">Why Choose Kashtex?</h2>
-            <p className="text-muted-foreground">We don't just write code; we engineer solutions that are scalable, secure, and user-friendly.</p>
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-4 text-white">Why Choose Kashtex?</h2>
+            <p className="text-white/60">We don't just write code; we engineer solutions that are scalable, secure, and user-friendly.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-              <Layout className="h-10 w-10 mb-4 text-primary" />
-              <h3 className="text-xl font-bold mb-2">Modern Design</h3>
-              <p className="text-muted-foreground leading-relaxed">Responsive, aesthetic interfaces that look great on mobile, tablet, and desktop devices.</p>
+            <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+              <Layout className="h-10 w-10 mb-6 text-emerald-400" />
+              <h3 className="text-xl font-bold mb-3 text-white">Modern Design</h3>
+              <p className="text-white/60 leading-relaxed">Responsive, aesthetic interfaces that look great on mobile, tablet, and desktop devices.</p>
             </div>
-            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-              <Code className="h-10 w-10 mb-4 text-primary" />
-              <h3 className="text-xl font-bold mb-2">Full-Stack Power</h3>
-              <p className="text-muted-foreground leading-relaxed">Custom backend development, API integration, and database management tailored to your needs.</p>
+            <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+              <Code className="h-10 w-10 mb-6 text-emerald-400" />
+              <h3 className="text-xl font-bold mb-3 text-white">Full-Stack Power</h3>
+              <p className="text-white/60 leading-relaxed">Custom backend development, API integration, and database management tailored to your needs.</p>
             </div>
-            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
-              <Shield className="h-10 w-10 mb-4 text-primary" />
-              <h3 className="text-xl font-bold mb-2">Secure & Reliable</h3>
-              <p className="text-muted-foreground leading-relaxed">Built with security best practices, data validation, and optimized performance in mind.</p>
+            <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:bg-white/10 transition-all duration-300">
+              <Shield className="h-10 w-10 mb-6 text-emerald-400" />
+              <h3 className="text-xl font-bold mb-3 text-white">Secure & Reliable</h3>
+              <p className="text-white/60 leading-relaxed">Built with security best practices, data validation, and optimized performance in mind.</p>
             </div>
           </div>
         </div>
