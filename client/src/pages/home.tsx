@@ -1,0 +1,150 @@
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { ArrowRight, Code, Layout, Shield, CheckCircle } from "lucide-react";
+import heroImage from "@assets/generated_images/minimalist_tech_background.png";
+import portfolio1 from "@assets/generated_images/e-commerce_website_mockup.png";
+import portfolio2 from "@assets/generated_images/corporate_website_mockup.png";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
+import Chatbot from "@/components/ui/chatbot";
+
+export default function Home() {
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-background py-20 lg:py-32">
+        <div className="container px-4 md:px-6 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="flex flex-col gap-6 animate-in slide-in-from-left-5 duration-700">
+              <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 w-fit text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                Professional Web Development
+              </div>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold tracking-tight text-foreground">
+                Building Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">Digital Future</span>
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-[600px] leading-relaxed">
+                Kashtex delivers full-stack web solutions that drive business growth. 
+                From custom frontends to secure backend systems, we build it all.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/contact">
+                  <Button size="lg" className="h-12 px-8 text-base">
+                    Start a Project <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/portfolio">
+                  <Button variant="outline" size="lg" className="h-12 px-8 text-base">
+                    View Our Work
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="relative aspect-square lg:aspect-auto lg:h-[600px] animate-in slide-in-from-right-5 duration-700 delay-200">
+              <img 
+                src={heroImage} 
+                alt="Digital Technology Abstract" 
+                className="w-full h-full object-cover rounded-2xl shadow-2xl"
+              />
+              <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/10 dark:ring-white/10" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 bg-muted/30">
+        <div className="container px-4">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <h2 className="text-3xl font-heading font-bold mb-4">Why Choose Kashtex?</h2>
+            <p className="text-muted-foreground">We don't just write code; we engineer solutions that are scalable, secure, and user-friendly.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+              <Layout className="h-10 w-10 mb-4 text-primary" />
+              <h3 className="text-xl font-bold mb-2">Modern Design</h3>
+              <p className="text-muted-foreground leading-relaxed">Responsive, aesthetic interfaces that look great on mobile, tablet, and desktop devices.</p>
+            </div>
+            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+              <Code className="h-10 w-10 mb-4 text-primary" />
+              <h3 className="text-xl font-bold mb-2">Full-Stack Power</h3>
+              <p className="text-muted-foreground leading-relaxed">Custom backend development, API integration, and database management tailored to your needs.</p>
+            </div>
+            <div className="bg-card p-8 rounded-xl shadow-sm border hover:shadow-md transition-shadow">
+              <Shield className="h-10 w-10 mb-4 text-primary" />
+              <h3 className="text-xl font-bold mb-2">Secure & Reliable</h3>
+              <p className="text-muted-foreground leading-relaxed">Built with security best practices, data validation, and optimized performance in mind.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Work Preview */}
+      <section className="py-20">
+        <div className="container px-4">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-heading font-bold mb-4">Featured Projects</h2>
+              <p className="text-muted-foreground">A glimpse of what we can build for you.</p>
+            </div>
+            <Link href="/portfolio">
+              <Button variant="ghost" className="hidden sm:flex">View All Projects <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </Link>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="group overflow-hidden rounded-xl border bg-card">
+              <div className="aspect-video overflow-hidden">
+                <img src={portfolio1} alt="E-commerce Project" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2">LuxeCommerce Platform</h3>
+                <p className="text-muted-foreground mb-4">Full-stack e-commerce solution with inventory management.</p>
+                <div className="flex gap-2">
+                  <span className="text-xs bg-secondary px-2 py-1 rounded">React</span>
+                  <span className="text-xs bg-secondary px-2 py-1 rounded">Node.js</span>
+                </div>
+              </div>
+            </div>
+            <div className="group overflow-hidden rounded-xl border bg-card">
+              <div className="aspect-video overflow-hidden">
+                <img src={portfolio2} alt="Corporate Project" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2">FinTech Dashboard</h3>
+                <p className="text-muted-foreground mb-4">Secure client portal for a financial services firm.</p>
+                <div className="flex gap-2">
+                  <span className="text-xs bg-secondary px-2 py-1 rounded">TypeScript</span>
+                  <span className="text-xs bg-secondary px-2 py-1 rounded">PostgreSQL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 text-center sm:hidden">
+            <Link href="/portfolio">
+              <Button variant="ghost">View All Projects <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 bg-primary text-primary-foreground">
+        <div className="container px-4 text-center">
+          <h2 className="text-3xl sm:text-4xl font-heading font-bold mb-6">Ready to start your project?</h2>
+          <p className="text-primary-foreground/80 max-w-2xl mx-auto mb-8 text-lg">
+            Let's turn your vision into a reality. Contact us today for a free consultation and quote.
+          </p>
+          <Link href="/contact">
+            <Button size="lg" variant="secondary" className="h-14 px-8 text-lg">
+              Get in Touch
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
+      <Chatbot />
+    </div>
+  );
+}
