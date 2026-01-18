@@ -37,7 +37,8 @@ export default function Portfolio() {
       
       <main className="flex-1">
         <div className="relative bg-muted/30 py-20 overflow-hidden">
-          <div className="absolute inset-0 bg-chex-pattern pointer-events-none" />
+          <div className="absolute inset-0 bg-modern-dots pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-full bg-noise pointer-events-none" />
           <div className="container px-4 text-center relative z-10">
             <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6">Our Work</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">

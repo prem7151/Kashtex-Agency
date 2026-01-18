@@ -76,7 +76,8 @@ export default function Contact() {
       <Navbar />
       
       <main className="flex-1 py-16 bg-muted/5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-chex-pattern pointer-events-none opacity-[0.02]" />
+        <div className="absolute inset-0 bg-modern-dots pointer-events-none opacity-[0.05]" />
+        <div className="absolute top-0 left-0 w-full h-full bg-noise pointer-events-none" />
         <div className="container px-4 relative z-10">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
