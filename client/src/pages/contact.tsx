@@ -12,244 +12,312 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, MapPin, Loader2, CalendarIcon } from "lucide-react";
+import { Mail, Phone, MapPin, Loader2, CalendarIcon, Send, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const formSchema = z.object({
+const contactSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  subject: z.string().min(1, "Please enter a subject"),
+  message: z.string().min(10, "Message must be at least 10 characters"),
+});
+
+const appointmentSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   service: z.string().min(1, "Please select a service"),
   date: z.date({
-    required_error: "Please select a date for your appointment",
+    required_error: "Please select a date",
   }),
   time: z.string().min(1, "Please select a time"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  details: z.string().optional(),
 });
 
 export default function Contact() {
   const { toast } = useToast();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      service: "",
-      time: "",
-      message: "",
-    },
+
+  const contactForm = useForm<z.infer<typeof contactSchema>>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: { name: "", email: "", subject: "", message: "" },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    console.log("Appointment Booked:", values);
+  const appointmentForm = useForm<z.infer<typeof appointmentSchema>>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: { name: "", email: "", service: "", time: "", details: "" },
+  });
+
+  const onContactSubmit = async (values: z.infer<typeof contactSchema>) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log("Contact Form:", values);
     toast({
-      title: "Appointment Requested",
-      description: `Confirmation sent to ${values.email}. We've also notified our team.`,
+      title: "Message Sent",
+      description: "We've received your message and will get back to you soon.",
     });
-    form.reset();
+    contactForm.reset();
   };
 
-  const timeSlots = [
-    "09:00 AM", "10:00 AM", "11:00 AM", 
-    "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"
-  ];
+  const onAppointmentSubmit = async (values: z.infer<typeof appointmentSchema>) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.log("Appointment Request:", values);
+    toast({
+      title: "Appointment Requested",
+      description: `Schedule for ${format(values.date, "PPP")} at ${values.time} submitted.`,
+    });
+    appointmentForm.reset();
+  };
+
+  const timeSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"];
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 py-20 bg-muted/10">
+      <main className="flex-1 py-16 bg-muted/5">
         <div className="container px-4">
-          <div className="grid md:grid-cols-2 gap-12 lg:gap-24">
-            {/* Contact Info */}
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-4xl font-heading font-bold mb-4">Book an Appointment</h1>
-                <p className="text-muted-foreground text-lg">
-                  Ready to start? Select a time and date that works for you, and we'll confirm via email.
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <Mail className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Email</h3>
-                    <p className="text-muted-foreground">kashtex1@gmail.com</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <Phone className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-1">Phone</h3>
-                    <p className="text-muted-foreground">+91 8200369078</p>
-                  </div>
-                </div>
-              </div>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-heading font-bold mb-4">Contact & Appointments</h1>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Reach out for general inquiries or schedule a direct consultation with our engineering team.
+              </p>
             </div>
 
-            {/* Form */}
-            <div className="bg-card border rounded-xl p-6 sm:p-8 shadow-sm">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your Name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <div className="grid lg:grid-cols-3 gap-8 items-start">
+              {/* Sidebar Info */}
+              <div className="lg:col-span-1 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Contact Details</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <Mail className="h-5 w-5 text-primary mt-1" />
+                      <div>
+                        <p className="font-medium text-sm">Email</p>
+                        <p className="text-sm text-muted-foreground">kashtex1@gmail.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <Phone className="h-5 w-5 text-primary mt-1" />
+                      <div>
+                        <p className="font-medium text-sm">Phone</p>
+                        <p className="text-sm text-muted-foreground">+91 8200369078</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-4">
+                      <MapPin className="h-5 w-5 text-primary mt-1" />
+                      <div>
+                        <p className="font-medium text-sm">Location</p>
+                        <p className="text-sm text-muted-foreground">Online-only Agency</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                <div className="bg-primary/5 p-6 rounded-xl border border-primary/10">
+                  <h3 className="font-bold text-sm mb-2">Why book a call?</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Our direct consultations help us understand your technical requirements better and provide accurate architectural advice for your project.
+                  </p>
+                </div>
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="service"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Service</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a service" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="website">New Website</SelectItem>
-                            <SelectItem value="redesign">Website Redesign</SelectItem>
-                            <SelectItem value="ecommerce">E-commerce Store</SelectItem>
-                            <SelectItem value="webapp">Custom Web App</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Main Form Tabs */}
+              <div className="lg:col-span-2">
+                <Tabs defaultValue="contact" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-8">
+                    <TabsTrigger value="contact" className="flex items-center gap-2">
+                      <Send className="h-4 w-4" /> Quick Message
+                    </TabsTrigger>
+                    <TabsTrigger value="appointment" className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" /> Book Appointment
+                    </TabsTrigger>
+                  </TabsList>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="date"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Date</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date < new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
+                  <TabsContent value="contact">
+                    <Card className="border shadow-sm">
+                      <CardHeader>
+                        <CardTitle>Send a Message</CardTitle>
+                        <CardDescription>General inquiries and partnership opportunities.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...contactForm}>
+                          <form onSubmit={contactForm.handleSubmit(onContactSubmit)} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={contactForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
                               />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                              <FormField
+                                control={contactForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl><Input placeholder="john@example.com" {...field} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            <FormField
+                              control={contactForm.control}
+                              name="subject"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Subject</FormLabel>
+                                  <FormControl><Input placeholder="How can we help?" {...field} /></FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={contactForm.control}
+                              name="message"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Message</FormLabel>
+                                  <FormControl><Textarea placeholder="Write your message here..." className="min-h-[120px]" {...field} /></FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button type="submit" className="w-full" disabled={contactForm.formState.isSubmitting}>
+                              {contactForm.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Send Message"}
+                            </Button>
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-                    <FormField
-                      control={form.control}
-                      name="time"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Time</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select time" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {timeSlots.map(slot => (
-                                <SelectItem key={slot} value={slot}>{slot}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <TabsContent value="appointment">
+                    <Card className="border shadow-sm">
+                      <CardHeader>
+                        <CardTitle>Schedule a Call</CardTitle>
+                        <CardDescription>Choose a specific time for a detailed project discussion.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Form {...appointmentForm}>
+                          <form onSubmit={appointmentForm.handleSubmit(onAppointmentSubmit)} className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={appointmentForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl><Input placeholder="Your Name" {...field} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={appointmentForm.control}
+                                name="email"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl><Input placeholder="your@email.com" {...field} /></FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
 
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Project Details</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Tell us about your project..." 
-                            className="min-h-[100px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                            <FormField
+                              control={appointmentForm.control}
+                              name="service"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Project Type</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select project type" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="website">Business Website</SelectItem>
+                                      <SelectItem value="ecommerce">E-commerce Store</SelectItem>
+                                      <SelectItem value="app">Custom Web App</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Confirming...
-                      </>
-                    ) : (
-                      "Schedule Appointment"
-                    )}
-                  </Button>
-                </form>
-              </Form>
+                            <div className="grid grid-cols-2 gap-4">
+                              <FormField
+                                control={appointmentForm.control}
+                                name="date"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-col">
+                                    <FormLabel>Date</FormLabel>
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <FormControl>
+                                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                            {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                          </Button>
+                                        </FormControl>
+                                      </PopoverTrigger>
+                                      <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
+                                      </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <FormField
+                                control={appointmentForm.control}
+                                name="time"
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Time</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
+                                      <SelectContent>
+                                        {timeSlots.map(slot => <SelectItem key={slot} value={slot}>{slot}</SelectItem>)}
+                                      </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
+                            <FormField
+                              control={appointmentForm.control}
+                              name="details"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Extra Details (Optional)</FormLabel>
+                                  <FormControl><Textarea placeholder="Any specific topics to discuss?" {...field} /></FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <Button type="submit" className="w-full" disabled={appointmentForm.formState.isSubmitting}>
+                              {appointmentForm.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Book My Call"}
+                            </Button>
+                          </form>
+                        </Form>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </div>
             </div>
           </div>
         </div>
