@@ -36,7 +36,7 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>siteveraa@gmail.com</li>
+              <li>Kashtex1@gmail.com</li>
               <li>+91 8200369078</li>
               <li>Online-only Agency</li>
             </ul>
