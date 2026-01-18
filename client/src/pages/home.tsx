@@ -22,7 +22,7 @@ export default function Home() {
                 Professional Web Development
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-heading font-bold tracking-tight text-foreground">
-                Building Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400">Digital Future</span>
+                Building Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500 dark:from-emerald-400 dark:to-teal-300">Digital Future</span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-[600px] leading-relaxed">
                 Kashtex delivers full-stack web solutions that drive business growth. 
