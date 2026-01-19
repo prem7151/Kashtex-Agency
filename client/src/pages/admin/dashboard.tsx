@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText, Calendar, Loader2, BarChart3, TrendingUp } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText, Calendar, Loader2, BarChart3, TrendingUp, Eye } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,8 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [selectedChatLog, setSelectedChatLog] = useState<ChatLog | null>(null);
 
   const { data: authData, isLoading: authLoading, error: authError } = useQuery({
     queryKey: ["auth"],
@@ -351,17 +354,19 @@ export default function AdminDashboard() {
                               {contact.isRead ? "Read" : "New"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {!contact.isRead && (
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => markReadMutation.mutate(contact.id)}
-                                disabled={markReadMutation.isPending}
-                              >
-                                Mark Read
-                              </Button>
-                            )}
+                          <TableCell className="text-right space-x-1">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedContact(contact);
+                                if (!contact.isRead) {
+                                  markReadMutation.mutate(contact.id);
+                                }
+                              }}
+                            >
+                              <Eye className="h-3 w-3 mr-1" /> View
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -370,6 +375,31 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+
+            <Dialog open={!!selectedContact} onOpenChange={() => setSelectedContact(null)}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Message from {selectedContact?.name}</DialogTitle>
+                  <DialogDescription>{selectedContact?.email}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Subject</Label>
+                    <p className="font-medium">{selectedContact?.subject}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Message</Label>
+                    <p className="whitespace-pre-wrap bg-muted p-3 rounded-lg text-sm">{selectedContact?.message}</p>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Received: {selectedContact && format(new Date(selectedContact.createdAt), "MMM d, yyyy h:mm a")}</span>
+                    <Badge variant={selectedContact?.isRead ? "outline" : "destructive"}>
+                      {selectedContact?.isRead ? "Read" : "New"}
+                    </Badge>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="appointments">
@@ -462,6 +492,7 @@ export default function AdminDashboard() {
                         <TableHead>Session</TableHead>
                         <TableHead>Messages</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -479,6 +510,15 @@ export default function AdminDashboard() {
                             <TableCell className="font-mono text-xs">{log.sessionId.slice(0, 8)}...</TableCell>
                             <TableCell>{messageCount} messages</TableCell>
                             <TableCell>{format(new Date(log.createdAt), "MMM d, yyyy h:mm a")}</TableCell>
+                            <TableCell className="text-right">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setSelectedChatLog(log)}
+                              >
+                                <Eye className="h-3 w-3 mr-1" /> View
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         );
                       })}
@@ -487,6 +527,37 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+
+            <Dialog open={!!selectedChatLog} onOpenChange={() => setSelectedChatLog(null)}>
+              <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+                <DialogHeader>
+                  <DialogTitle>Chat Conversation</DialogTitle>
+                  <DialogDescription>
+                    {selectedChatLog?.visitorName || "Anonymous"} - {format(selectedChatLog ? new Date(selectedChatLog.createdAt) : new Date(), "MMM d, yyyy h:mm a")}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto space-y-3 py-4">
+                  {selectedChatLog && (() => {
+                    try {
+                      const msgs = JSON.parse(selectedChatLog.messages);
+                      return msgs.map((msg: any, i: number) => (
+                        <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[80%] p-3 text-sm rounded-lg ${
+                            msg.role === "user" 
+                              ? "bg-primary text-primary-foreground" 
+                              : "bg-muted"
+                          }`}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      ));
+                    } catch {
+                      return <p className="text-muted-foreground">Could not parse conversation</p>;
+                    }
+                  })()}
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
