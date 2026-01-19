@@ -70,12 +70,23 @@ The admin account is created on first run via `POST /api/admin/setup`. Default c
 
 ### Email Notifications
 Email notifications to kashtex1@gmail.com are not yet configured. To enable:
-1. Set up Resend integration OR
-2. Add `RESEND_API_KEY` secret and implement email sending in `/server/routes.ts`
+1. Set up Resend integration via Replit's connector OR
+2. Add `RESEND_API_KEY` secret manually and implement email sending in `/server/routes.ts`
 
 Notifications should be sent for:
 - New contact form submissions
 - New appointment bookings
+
+### Payment Integration
+Stripe/Razorpay integration is prepared but not configured. Free to sign up - only pay per transaction (2-3%).
+
+## Analytics Dashboard
+The admin panel includes an Analytics tab showing:
+- Total leads, appointments, and chat sessions
+- Conversion rate (leads to confirmed appointments)
+- 7-day activity chart (leads and appointments over time)
+- Appointments by service (pie chart)
+- Appointment status breakdown (pending/confirmed/cancelled)
 
 ## Commands
 - `npm run dev` - Start development server

@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText, Calendar, Loader2 } from "lucide-react";
+import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText, Calendar, Loader2, BarChart3, TrendingUp } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -179,6 +180,9 @@ export default function AdminDashboard() {
           </Button>
           <Button variant={activeTab === "chat" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("chat")} data-testid="nav-chat">
             <MessageSquare className="mr-2 h-4 w-4" /> Chatbot Logs
+          </Button>
+          <Button variant={activeTab === "analytics" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("analytics")} data-testid="nav-analytics">
+            <BarChart3 className="mr-2 h-4 w-4" /> Analytics
           </Button>
           <Button variant={activeTab === "settings" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("settings")} data-testid="nav-settings">
             <Settings className="mr-2 h-4 w-4" /> Settings
@@ -483,6 +487,165 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            {(() => {
+              const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+              
+              const last7Days = Array.from({ length: 7 }, (_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (6 - i));
+                const dateStr = format(date, "MMM d");
+                const fullDate = format(date, "yyyy-MM-dd");
+                return {
+                  name: dateStr,
+                  leads: contacts.filter(c => format(new Date(c.createdAt), "yyyy-MM-dd") === fullDate).length,
+                  appointments: appointments.filter(a => format(new Date(a.createdAt), "yyyy-MM-dd") === fullDate).length,
+                };
+              });
+
+              const serviceStats = appointments.reduce((acc, apt) => {
+                acc[apt.service] = (acc[apt.service] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>);
+              
+              const serviceData = Object.entries(serviceStats).map(([name, value]) => ({ name, value }));
+
+              const statusStats = appointments.reduce((acc, apt) => {
+                acc[apt.status] = (acc[apt.status] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>);
+
+              const confirmedAppts = appointments.filter(a => a.status === "confirmed").length;
+              const conversionRate = contacts.length > 0 
+                ? Math.round((confirmedAppts / contacts.length) * 100) 
+                : 0;
+
+              return (
+                <>
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{contacts.length}</div>
+                        <p className="text-xs text-green-500 flex items-center mt-1">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          All time
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Appointments</CardTitle>
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{appointments.length}</div>
+                        <p className="text-xs text-muted-foreground">{confirmedAppts} confirmed</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{conversionRate}%</div>
+                        <p className="text-xs text-muted-foreground">Leads to confirmed</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Chat Sessions</CardTitle>
+                        <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{chatLogs.length}</div>
+                        <p className="text-xs text-muted-foreground">Visitor conversations</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Activity (Last 7 Days)</CardTitle>
+                        <CardDescription>Leads and appointments over time</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <AreaChart data={last7Days}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="name" className="text-xs" />
+                            <YAxis className="text-xs" />
+                            <Tooltip />
+                            <Area type="monotone" dataKey="leads" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.6} name="Leads" />
+                            <Area type="monotone" dataKey="appointments" stackId="2" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} name="Appointments" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Appointments by Service</CardTitle>
+                        <CardDescription>Distribution of service requests</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {serviceData.length === 0 ? (
+                          <p className="text-muted-foreground text-center py-16">No data yet</p>
+                        ) : (
+                          <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                              <Pie
+                                data={serviceData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                                outerRadius={100}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {serviceData.map((_, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Appointment Status Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={[
+                          { status: 'Pending', count: statusStats['pending'] || 0 },
+                          { status: 'Confirmed', count: statusStats['confirmed'] || 0 },
+                          { status: 'Cancelled', count: statusStats['cancelled'] || 0 },
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                          <XAxis dataKey="status" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </>
+              );
+            })()}
           </TabsContent>
 
           <TabsContent value="settings">
