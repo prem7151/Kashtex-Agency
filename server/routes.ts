@@ -7,6 +7,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import connectPg from "connect-pg-simple";
 import { z } from "zod";
+import { sendContactNotification, sendAppointmentNotification } from "./resend";
 
 const PgStore = connectPg(session);
 
@@ -131,7 +132,13 @@ export async function registerRoutes(
       const validated = insertContactSchema.parse(req.body);
       const contact = await storage.createContact(validated);
       
-      // Email notification will be added after Resend integration
+      // Send email notification
+      sendContactNotification({
+        name: validated.name,
+        email: validated.email,
+        subject: validated.subject,
+        message: validated.message
+      }).catch(err => console.error("Email notification failed:", err));
       
       res.status(201).json(contact);
     } catch (error) {
@@ -182,7 +189,15 @@ export async function registerRoutes(
       
       const appointment = await storage.createAppointment(validated);
       
-      // Email notification will be added after Resend integration
+      // Send email notification
+      sendAppointmentNotification({
+        name: validated.name,
+        email: validated.email,
+        service: validated.service,
+        date: validated.date,
+        time: validated.time,
+        details: validated.details
+      }).catch(err => console.error("Email notification failed:", err));
       
       res.status(201).json(appointment);
     } catch (error) {
