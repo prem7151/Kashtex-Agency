@@ -38,7 +38,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>kashtex1@gmail.com</li>
               <li>+91 8200369078</li>
-              <li>Online-only Agency</li>
+              <li>Online Agency</li>
             </ul>
           </div>
         </div>
