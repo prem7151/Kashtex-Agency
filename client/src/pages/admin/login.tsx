@@ -6,36 +6,47 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  const loginMutation = useMutation({
+    mutationFn: async (credentials: { username: string; password: string }) => {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Login failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Login Successful",
+        description: "Welcome back, Admin.",
+      });
+      setLocation("/admin/dashboard");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Login Failed",
+        variant: "destructive",
+        description: error.message,
+      });
+    },
+  });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // Mock authentication logic - for prototype purposes
-    // In a real app, this would be a secure backend call
-    setTimeout(() => {
-      if (username === "admin" && password === "kashtex2026") {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back, Admin.",
-        });
-        setLocation("/admin/dashboard");
-      } else {
-        toast({
-          title: "Login Failed",
-          variant: "destructive",
-          description: "Invalid username or password.",
-        });
-      }
-      setIsLoading(false);
-    }, 1000);
+    loginMutation.mutate({ username, password });
   };
 
   return (
@@ -63,6 +74,7 @@ export default function AdminLogin() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required 
+                data-testid="input-username"
               />
             </div>
             <div className="space-y-2">
@@ -73,12 +85,13 @@ export default function AdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
+                data-testid="input-password"
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
+            <Button type="submit" className="w-full" disabled={loginMutation.isPending} data-testid="button-login">
+              {loginMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...
                 </>

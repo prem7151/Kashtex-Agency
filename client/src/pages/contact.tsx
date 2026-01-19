@@ -17,6 +17,8 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -38,6 +40,7 @@ const appointmentSchema = z.object({
 
 export default function Contact() {
   const { toast } = useToast();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   const contactForm = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
@@ -49,27 +52,90 @@ export default function Contact() {
     defaultValues: { name: "", email: "", service: "", time: "", details: "" },
   });
 
-  const onContactSubmit = async (values: z.infer<typeof contactSchema>) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Contact Form:", values);
-    toast({
-      title: "Message Sent",
-      description: "We've received your message and will get back to you soon.",
-    });
-    contactForm.reset();
+  const { data: availableSlots, isLoading: slotsLoading } = useQuery({
+    queryKey: ["available-slots", selectedDate?.toISOString().split("T")[0]],
+    queryFn: async () => {
+      if (!selectedDate) return null;
+      const dateStr = selectedDate.toISOString().split("T")[0];
+      const res = await fetch(`/api/appointments/available?date=${dateStr}`);
+      if (!res.ok) throw new Error("Failed to fetch available slots");
+      return res.json() as Promise<{ availableSlots: string[]; bookedTimes: string[] }>;
+    },
+    enabled: !!selectedDate,
+  });
+
+  const contactMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof contactSchema>) => {
+      const res = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to submit");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "We've received your message and will get back to you soon.",
+      });
+      contactForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const appointmentMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof appointmentSchema>) => {
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...values,
+          date: values.date.toISOString().split("T")[0],
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to book appointment");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Appointment Requested",
+        description: `Schedule for ${format(variables.date, "PPP")} at ${variables.time} submitted.`,
+      });
+      appointmentForm.reset();
+      setSelectedDate(undefined);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Booking Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onContactSubmit = (values: z.infer<typeof contactSchema>) => {
+    contactMutation.mutate(values);
   };
 
-  const onAppointmentSubmit = async (values: z.infer<typeof appointmentSchema>) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log("Appointment Request:", values);
-    toast({
-      title: "Appointment Requested",
-      description: `Schedule for ${format(values.date, "PPP")} at ${values.time} submitted.`,
-    });
-    appointmentForm.reset();
+  const onAppointmentSubmit = (values: z.infer<typeof appointmentSchema>) => {
+    appointmentMutation.mutate(values);
   };
 
-  const timeSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"];
+  const allTimeSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM"];
+  const timeSlots = availableSlots?.availableSlots || allTimeSlots;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -131,10 +197,10 @@ export default function Contact() {
               <div className="lg:col-span-2">
                 <Tabs defaultValue="contact" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-8">
-                    <TabsTrigger value="contact" className="flex items-center gap-2">
+                    <TabsTrigger value="contact" className="flex items-center gap-2" data-testid="tab-contact">
                       <Send className="h-4 w-4" /> Quick Message
                     </TabsTrigger>
-                    <TabsTrigger value="appointment" className="flex items-center gap-2">
+                    <TabsTrigger value="appointment" className="flex items-center gap-2" data-testid="tab-appointment">
                       <Clock className="h-4 w-4" /> Book Appointment
                     </TabsTrigger>
                   </TabsList>
@@ -155,7 +221,7 @@ export default function Contact() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Name</FormLabel>
-                                    <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="John Doe" data-testid="input-contact-name" {...field} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -166,7 +232,7 @@ export default function Contact() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Email</FormLabel>
-                                    <FormControl><Input placeholder="john@example.com" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="john@example.com" data-testid="input-contact-email" {...field} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -178,7 +244,7 @@ export default function Contact() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Subject</FormLabel>
-                                  <FormControl><Input placeholder="How can we help?" {...field} /></FormControl>
+                                  <FormControl><Input placeholder="How can we help?" data-testid="input-contact-subject" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -189,13 +255,13 @@ export default function Contact() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Message</FormLabel>
-                                  <FormControl><Textarea placeholder="Write your message here..." className="min-h-[120px]" {...field} /></FormControl>
+                                  <FormControl><Textarea placeholder="Write your message here..." className="min-h-[120px]" data-testid="input-contact-message" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            <Button type="submit" className="w-full" disabled={contactForm.formState.isSubmitting}>
-                              {contactForm.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Send Message"}
+                            <Button type="submit" className="w-full" disabled={contactMutation.isPending} data-testid="button-submit-contact">
+                              {contactMutation.isPending ? <Loader2 className="animate-spin" /> : "Send Message"}
                             </Button>
                           </form>
                         </Form>
@@ -219,7 +285,7 @@ export default function Contact() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Name</FormLabel>
-                                    <FormControl><Input placeholder="Your Name" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="Your Name" data-testid="input-appointment-name" {...field} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -230,7 +296,7 @@ export default function Contact() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Email</FormLabel>
-                                    <FormControl><Input placeholder="your@email.com" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="your@email.com" data-testid="input-appointment-email" {...field} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
@@ -244,7 +310,7 @@ export default function Contact() {
                                 <FormItem>
                                   <FormLabel>Project Type</FormLabel>
                                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select project type" /></SelectTrigger></FormControl>
+                                    <FormControl><SelectTrigger data-testid="select-service"><SelectValue placeholder="Select project type" /></SelectTrigger></FormControl>
                                     <SelectContent>
                                       <SelectItem value="website">Business Website</SelectItem>
                                       <SelectItem value="ecommerce">E-commerce Store</SelectItem>
@@ -266,14 +332,24 @@ export default function Contact() {
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <FormControl>
-                                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                          <Button variant="outline" className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} data-testid="button-date-picker">
                                             {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                           </Button>
                                         </FormControl>
                                       </PopoverTrigger>
                                       <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date()} initialFocus />
+                                        <Calendar 
+                                          mode="single" 
+                                          selected={field.value} 
+                                          onSelect={(date) => {
+                                            field.onChange(date);
+                                            setSelectedDate(date);
+                                            appointmentForm.setValue("time", "");
+                                          }} 
+                                          disabled={(date) => date < new Date()} 
+                                          initialFocus 
+                                        />
                                       </PopoverContent>
                                     </Popover>
                                     <FormMessage />
@@ -286,10 +362,20 @@ export default function Contact() {
                                 render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>Time</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                      <FormControl><SelectTrigger><SelectValue placeholder="Select time" /></SelectTrigger></FormControl>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedDate || slotsLoading}>
+                                      <FormControl>
+                                        <SelectTrigger data-testid="select-time">
+                                          <SelectValue placeholder={slotsLoading ? "Loading..." : "Select time"} />
+                                        </SelectTrigger>
+                                      </FormControl>
                                       <SelectContent>
-                                        {timeSlots.map(slot => <SelectItem key={slot} value={slot}>{slot}</SelectItem>)}
+                                        {timeSlots.length === 0 ? (
+                                          <SelectItem value="none" disabled>No slots available</SelectItem>
+                                        ) : (
+                                          timeSlots.map(slot => (
+                                            <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                                          ))
+                                        )}
                                       </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -304,14 +390,14 @@ export default function Contact() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Extra Details (Optional)</FormLabel>
-                                  <FormControl><Textarea placeholder="Any specific topics to discuss?" {...field} /></FormControl>
+                                  <FormControl><Textarea placeholder="Any specific topics to discuss?" data-testid="input-appointment-details" {...field} /></FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
 
-                            <Button type="submit" className="w-full" disabled={appointmentForm.formState.isSubmitting}>
-                              {appointmentForm.formState.isSubmitting ? <Loader2 className="animate-spin" /> : "Book My Call"}
+                            <Button type="submit" className="w-full" disabled={appointmentMutation.isPending} data-testid="button-submit-appointment">
+                              {appointmentMutation.isPending ? <Loader2 className="animate-spin" /> : "Book My Call"}
                             </Button>
                           </form>
                         </Form>

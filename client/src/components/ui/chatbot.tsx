@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, X, Bot, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { MessageSquare, Send, X, Bot } from "lucide-react";
 
 type Message = {
   id: string;
@@ -13,8 +12,19 @@ type Message = {
   timestamp: Date;
 };
 
+const generateSessionId = () => {
+  return `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 export default function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
+  const [sessionId] = useState(() => {
+    const stored = sessionStorage.getItem("kashtex_chat_session");
+    if (stored) return stored;
+    const newId = generateSessionId();
+    sessionStorage.setItem("kashtex_chat_session", newId);
+    return newId;
+  });
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -26,13 +36,30 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
+
+  const saveConversation = async (updatedMessages: Message[]) => {
+    try {
+      await fetch(`/api/chat-logs/${sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: updatedMessages.map(m => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.timestamp.toISOString(),
+          })),
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to save conversation:", error);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -44,12 +71,12 @@ export default function Chatbot() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response logic
-    setTimeout(() => {
+    setTimeout(async () => {
       let aiResponseContent = "I've noted that down. A human representative will follow up with you shortly via email.";
       
       const lowerInput = userMsg.content.toLowerCase();
@@ -58,7 +85,11 @@ export default function Chatbot() {
       } else if (lowerInput.includes("service") || lowerInput.includes("build")) {
         aiResponseContent = "We specialize in full-stack development, including custom frontends, secure backends, and mobile-responsive designs. Would you like to discuss a specific project?";
       } else if (lowerInput.includes("human") || lowerInput.includes("contact") || lowerInput.includes("talk")) {
-        aiResponseContent = "I understand you'd like to speak with a human. I've escalated this to our team at siteveraa@gmail.com. You can also use the contact form on our website.";
+        aiResponseContent = "I understand you'd like to speak with a human. I've escalated this to our team at kashtex1@gmail.com. You can also use the contact form on our website.";
+      } else if (lowerInput.includes("appointment") || lowerInput.includes("book") || lowerInput.includes("call")) {
+        aiResponseContent = "You can book a consultation call directly on our Contact page. Just click the 'Book Appointment' tab and choose a time that works for you!";
+      } else if (lowerInput.includes("portfolio") || lowerInput.includes("work") || lowerInput.includes("example")) {
+        aiResponseContent = "Check out our Portfolio page to see examples of our work, including e-commerce platforms, corporate websites, and creative projects.";
       }
 
       const aiMsg: Message = {
@@ -68,11 +99,11 @@ export default function Chatbot() {
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, aiMsg]);
+      const finalMessages = [...newMessages, aiMsg];
+      setMessages(finalMessages);
       setIsTyping(false);
       
-      // In a real app, this would POST to the backend API
-      console.log("Saving conversation to DB:", [...messages, userMsg, aiMsg]);
+      await saveConversation(finalMessages);
     }, 1500);
   };
 
@@ -85,6 +116,7 @@ export default function Chatbot() {
             size="icon" 
             className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105"
             onClick={() => setIsOpen(true)}
+            data-testid="button-open-chat"
           >
             <MessageSquare className="h-6 w-6 text-primary-foreground" />
           </Button>
@@ -102,7 +134,7 @@ export default function Chatbot() {
                 <p className="text-xs text-primary-foreground/70">Online</p>
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20" onClick={() => setIsOpen(false)} data-testid="button-close-chat">
               <X className="h-4 w-4" />
             </Button>
           </CardHeader>
@@ -155,8 +187,9 @@ export default function Chatbot() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 className="flex-1 focus-visible:ring-1"
+                data-testid="input-chat-message"
               />
-              <Button type="submit" size="icon" disabled={!input.trim() || isTyping}>
+              <Button type="submit" size="icon" disabled={!input.trim() || isTyping} data-testid="button-send-message">
                 <Send className="h-4 w-4" />
               </Button>
             </form>

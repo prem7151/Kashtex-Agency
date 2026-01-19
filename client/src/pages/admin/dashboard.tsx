@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,22 +8,155 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText } from "lucide-react";
+import { LayoutDashboard, Users, MessageSquare, Settings, LogOut, FileText, Calendar, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+
+type Contact = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
+type Appointment = {
+  id: string;
+  name: string;
+  email: string;
+  service: string;
+  date: string;
+  time: string;
+  details: string | null;
+  status: string;
+  createdAt: string;
+};
+
+type ChatLog = {
+  id: string;
+  sessionId: string;
+  visitorName: string | null;
+  visitorEmail: string | null;
+  messages: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Mock Data
-  const leads = [
-    { id: 1, name: "John Doe", email: "john@example.com", service: "Website", date: "2023-10-25", status: "New" },
-    { id: 2, name: "Sarah Smith", email: "sarah@tech.co", service: "E-commerce", date: "2023-10-24", status: "Contacted" },
-    { id: 3, name: "Mike Johnson", email: "mike@cafe.com", service: "Menu App", date: "2023-10-23", status: "Closed" },
-  ];
+  const { data: authData, isLoading: authLoading, error: authError } = useQuery({
+    queryKey: ["auth"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (!res.ok) throw new Error("Not authenticated");
+      return res.json();
+    },
+    retry: false,
+  });
 
-  const chatLogs = [
-    { id: 1, user: "Visitor #4023", lastMsg: "How much for a basic site?", time: "10 mins ago" },
-    { id: 2, user: "Visitor #3922", lastMsg: "Do you do mobile apps?", time: "2 hours ago" },
-  ];
+  useEffect(() => {
+    if (authError) {
+      setLocation("/admin/login");
+    }
+  }, [authError, setLocation]);
+
+  const { data: contacts = [], isLoading: contactsLoading } = useQuery<Contact[]>({
+    queryKey: ["admin-contacts"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/contacts", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch contacts");
+      return res.json();
+    },
+    enabled: !!authData,
+  });
+
+  const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
+    queryKey: ["admin-appointments"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/appointments", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch appointments");
+      return res.json();
+    },
+    enabled: !!authData,
+  });
+
+  const { data: chatLogs = [], isLoading: chatLogsLoading } = useQuery<ChatLog[]>({
+    queryKey: ["admin-chat-logs"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/chat-logs", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch chat logs");
+      return res.json();
+    },
+    enabled: !!authData,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/admin/contacts/${id}/read`, {
+        method: "PATCH",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to mark as read");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-contacts"] });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await fetch(`/api/admin/appointments/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
+      toast({ title: "Status updated" });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Logout failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      setLocation("/admin/login");
+    },
+  });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!authData) {
+    return null;
+  }
+
+  const unreadContacts = contacts.filter(c => !c.isRead).length;
+  const pendingAppointments = appointments.filter(a => a.status === "pending").length;
 
   return (
     <div className="min-h-screen bg-muted/10 flex">
@@ -33,25 +166,34 @@ export default function AdminDashboard() {
           <h1 className="font-heading font-bold text-xl">Kashtex Admin</h1>
         </div>
         <nav className="flex-1 p-4 space-y-2">
-          <Button variant={activeTab === "overview" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("overview")}>
+          <Button variant={activeTab === "overview" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("overview")} data-testid="nav-overview">
             <LayoutDashboard className="mr-2 h-4 w-4" /> Overview
           </Button>
-          <Button variant={activeTab === "leads" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("leads")}>
+          <Button variant={activeTab === "leads" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("leads")} data-testid="nav-leads">
             <Users className="mr-2 h-4 w-4" /> Leads
+            {unreadContacts > 0 && <Badge variant="destructive" className="ml-auto">{unreadContacts}</Badge>}
           </Button>
-          <Button variant={activeTab === "chat" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("chat")}>
+          <Button variant={activeTab === "appointments" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("appointments")} data-testid="nav-appointments">
+            <Calendar className="mr-2 h-4 w-4" /> Appointments
+            {pendingAppointments > 0 && <Badge variant="secondary" className="ml-auto">{pendingAppointments}</Badge>}
+          </Button>
+          <Button variant={activeTab === "chat" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("chat")} data-testid="nav-chat">
             <MessageSquare className="mr-2 h-4 w-4" /> Chatbot Logs
           </Button>
-          <Button variant={activeTab === "settings" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("settings")}>
+          <Button variant={activeTab === "settings" ? "secondary" : "ghost"} className="w-full justify-start" onClick={() => setActiveTab("settings")} data-testid="nav-settings">
             <Settings className="mr-2 h-4 w-4" /> Settings
           </Button>
         </nav>
         <div className="p-4 border-t">
-          <Link href="/admin/login">
-            <Button variant="outline" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50">
-              <LogOut className="mr-2 h-4 w-4" /> Logout
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            data-testid="button-logout"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Logout
+          </Button>
         </div>
       </aside>
 
@@ -68,29 +210,40 @@ export default function AdminDashboard() {
           <TabsList className="md:hidden">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
+            <TabsTrigger value="appointments">Bookings</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">+2 from last month</p>
+                  <div className="text-2xl font-bold">{contacts.length}</div>
+                  <p className="text-xs text-muted-foreground">{unreadContacts} unread</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
+                  <CardTitle className="text-sm font-medium">Appointments</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{appointments.length}</div>
+                  <p className="text-xs text-muted-foreground">{pendingAppointments} pending</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Chat Sessions</CardTitle>
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
-                  <p className="text-xs text-muted-foreground">Currently online</p>
+                  <div className="text-2xl font-bold">{chatLogs.length}</div>
+                  <p className="text-xs text-muted-foreground">Total conversations</p>
                 </CardContent>
               </Card>
               <Card>
@@ -99,8 +252,60 @@ export default function AdminDashboard() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$4,200</div>
+                  <div className="text-2xl font-bold">$0</div>
                   <p className="text-xs text-muted-foreground">Pending invoices</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recent Leads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {contactsLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                  ) : contacts.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No leads yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {contacts.slice(0, 5).map((contact) => (
+                        <div key={contact.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{contact.name}</p>
+                            <p className="text-xs text-muted-foreground">{contact.subject}</p>
+                          </div>
+                          {!contact.isRead && <Badge variant="destructive" className="text-xs">New</Badge>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Upcoming Appointments</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {appointmentsLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin" /></div>
+                  ) : appointments.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">No appointments yet</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {appointments.filter(a => a.status === "pending").slice(0, 5).map((apt) => (
+                        <div key={apt.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-sm">{apt.name}</p>
+                            <p className="text-xs text-muted-foreground">{apt.date} at {apt.time}</p>
+                          </div>
+                          <Badge variant="outline">{apt.service}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -109,36 +314,127 @@ export default function AdminDashboard() {
           <TabsContent value="leads">
             <Card>
               <CardHeader>
-                <CardTitle>Recent Leads</CardTitle>
-                <CardDescription>Potential clients from contact form.</CardDescription>
+                <CardTitle>All Leads</CardTitle>
+                <CardDescription>Contact form submissions from potential clients.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Service</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leads.map((lead) => (
-                      <TableRow key={lead.id}>
-                        <TableCell className="font-medium">{lead.name}<br/><span className="text-xs text-muted-foreground">{lead.email}</span></TableCell>
-                        <TableCell>{lead.service}</TableCell>
-                        <TableCell>{lead.date}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{lead.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost">View</Button>
-                        </TableCell>
+                {contactsLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : contacts.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No leads yet. Share your website to start collecting leads!</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {contacts.map((contact) => (
+                        <TableRow key={contact.id}>
+                          <TableCell className="font-medium">
+                            {contact.name}<br/>
+                            <span className="text-xs text-muted-foreground">{contact.email}</span>
+                          </TableCell>
+                          <TableCell>{contact.subject}</TableCell>
+                          <TableCell>{format(new Date(contact.createdAt), "MMM d, yyyy")}</TableCell>
+                          <TableCell>
+                            <Badge variant={contact.isRead ? "outline" : "destructive"}>
+                              {contact.isRead ? "Read" : "New"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {!contact.isRead && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => markReadMutation.mutate(contact.id)}
+                                disabled={markReadMutation.isPending}
+                              >
+                                Mark Read
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="appointments">
+            <Card>
+              <CardHeader>
+                <CardTitle>All Appointments</CardTitle>
+                <CardDescription>Scheduled consultation calls.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {appointmentsLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : appointments.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No appointments yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Service</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {appointments.map((apt) => (
+                        <TableRow key={apt.id}>
+                          <TableCell className="font-medium">
+                            {apt.name}<br/>
+                            <span className="text-xs text-muted-foreground">{apt.email}</span>
+                          </TableCell>
+                          <TableCell>{apt.service}</TableCell>
+                          <TableCell>{apt.date} at {apt.time}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              apt.status === "confirmed" ? "default" :
+                              apt.status === "cancelled" ? "destructive" : "secondary"
+                            }>
+                              {apt.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right space-x-2">
+                            {apt.status === "pending" && (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => updateStatusMutation.mutate({ id: apt.id, status: "confirmed" })}
+                                  disabled={updateStatusMutation.isPending}
+                                >
+                                  Confirm
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost"
+                                  className="text-red-500"
+                                  onClick={() => updateStatusMutation.mutate({ id: apt.id, status: "cancelled" })}
+                                  disabled={updateStatusMutation.isPending}
+                                >
+                                  Cancel
+                                </Button>
+                              </>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -147,37 +443,64 @@ export default function AdminDashboard() {
              <Card>
               <CardHeader>
                 <CardTitle>AI Chat Logs</CardTitle>
-                <CardDescription>Review automated conversations.</CardDescription>
+                <CardDescription>Review automated conversations with visitors.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Last Message</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {chatLogs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="font-medium">{log.user}</TableCell>
-                        <TableCell className="truncate max-w-[200px]">{log.lastMsg}</TableCell>
-                        <TableCell>{log.time}</TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost">Read Log</Button>
-                        </TableCell>
+                {chatLogsLoading ? (
+                  <div className="flex justify-center py-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : chatLogs.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">No chat conversations yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Visitor</TableHead>
+                        <TableHead>Session</TableHead>
+                        <TableHead>Messages</TableHead>
+                        <TableHead>Date</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {chatLogs.map((log) => {
+                        let messageCount = 0;
+                        try {
+                          messageCount = JSON.parse(log.messages).length;
+                        } catch {}
+                        return (
+                          <TableRow key={log.id}>
+                            <TableCell className="font-medium">
+                              {log.visitorName || "Anonymous"}<br/>
+                              <span className="text-xs text-muted-foreground">{log.visitorEmail || "No email"}</span>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{log.sessionId.slice(0, 8)}...</TableCell>
+                            <TableCell>{messageCount} messages</TableCell>
+                            <TableCell>{format(new Date(log.createdAt), "MMM d, yyyy h:mm a")}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="settings">
             <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Settings</CardTitle>
+                  <CardDescription>Configure how you receive alerts.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid gap-2">
+                    <Label>Admin Email for Notifications</Label>
+                    <Input defaultValue="kashtex1@gmail.com" disabled />
+                    <p className="text-xs text-muted-foreground">Email notifications will be sent to this address.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Integrations</CardTitle>
@@ -188,30 +511,24 @@ export default function AdminDashboard() {
                     <div className="space-y-0.5">
                       <Label>Stripe Payments</Label>
                       <div className="text-sm text-muted-foreground">Enable payment processing for packages.</div>
-                      <div className="text-xs text-red-500 font-mono mt-1">STRIPE_SECRET_KEY not set</div>
+                      <div className="text-xs text-amber-600 font-mono mt-1">Coming soon</div>
                     </div>
                     <Switch disabled />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>AI Chatbot</Label>
-                      <div className="text-sm text-muted-foreground">Enable OpenAI powered responses.</div>
+                      <div className="text-sm text-muted-foreground">Automated responses for visitor inquiries.</div>
                     </div>
                     <Switch defaultChecked />
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contact Settings</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-2">
-                    <Label>Admin Email for Notifications</Label>
-                    <Input defaultValue="siteveraa@gmail.com" />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Email Notifications</Label>
+                      <div className="text-sm text-muted-foreground">Receive alerts for new leads and appointments.</div>
+                    </div>
+                    <Switch defaultChecked />
                   </div>
-                  <Button>Save Changes</Button>
                 </CardContent>
               </Card>
             </div>
