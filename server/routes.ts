@@ -33,12 +33,16 @@ export async function registerRoutes(
       resave: false,
       saveUninitialized: false,
       cookie: {
-        secure: process.env.NODE_ENV === "production",
+        secure: true,
         httpOnly: true,
+        sameSite: "none",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       },
     })
   );
+
+  // Trust proxy for secure cookies behind Replit's proxy
+  app.set("trust proxy", 1);
 
   app.use(passport.initialize());
   app.use(passport.session());
