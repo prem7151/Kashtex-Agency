@@ -296,15 +296,52 @@ export async function registerRoutes(
 
   // ============ ADMIN SETUP ROUTE (one-time) ============
   
+  // Auto-create admin on startup if doesn't exist
+  (async () => {
+    try {
+      const existingAdmin = await storage.getUserByUsername("admin");
+      if (!existingAdmin) {
+        await storage.createUser({
+          username: "admin",
+          password: "kashtex2026",
+        });
+        console.log("Default admin account created");
+      }
+    } catch (error) {
+      console.error("Failed to auto-create admin:", error);
+    }
+  })();
+
+  // GET endpoint for manual setup (browser accessible)
+  app.get("/api/admin/setup", async (req, res) => {
+    try {
+      const existingAdmin = await storage.getUserByUsername("admin");
+      if (existingAdmin) {
+        return res.json({ message: "Admin account already exists. You can login now." });
+      }
+      
+      const admin = await storage.createUser({
+        username: "admin",
+        password: "kashtex2026",
+      });
+      
+      res.json({ 
+        message: "Admin account created successfully!",
+        username: admin.username 
+      });
+    } catch (error) {
+      console.error("Admin setup error:", error);
+      res.status(500).json({ message: "Failed to create admin account" });
+    }
+  });
+  
   app.post("/api/admin/setup", async (req, res) => {
     try {
-      // Check if admin already exists
       const existingAdmin = await storage.getUserByUsername("admin");
       if (existingAdmin) {
         return res.status(400).json({ message: "Admin account already exists" });
       }
       
-      // Create default admin user
       const admin = await storage.createUser({
         username: "admin",
         password: "kashtex2026",
