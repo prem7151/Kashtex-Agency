@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { ArrowRight, Code, Layout, Shield, CheckCircle } from "lucide-react";
-import heroImage from "@assets/generated_images/minimalist_tech_background.png";
-import portfolio1 from "@assets/generated_images/e-commerce_website_mockup.png";
-import portfolio2 from "@assets/generated_images/corporate_website_mockup.png";
+import heroImage from "@assets/stock_images/modern_web_developme_383ffb88.jpg";
+import portfolio1 from "@assets/stock_images/professional_busines_e2f8f105.jpg";
+import portfolio2 from "@assets/stock_images/modern_corporate_fin_85b7c211.jpg";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Chatbot from "@/components/ui/chatbot";

@@ -10,7 +10,7 @@ import { Link } from "wouter";
 const tiers = [
   {
     name: "Starter",
-    price: "$500",
+    price: "$1,499",
     description: "Perfect for small businesses and personal portfolios.",
     features: [
       "Responsive 5-Page Website",
@@ -24,7 +24,7 @@ const tiers = [
   },
   {
     name: "Business",
-    price: "$1,200",
+    price: "$3,499",
     description: "Complete solution for growing businesses.",
     features: [
       "Up to 10 Pages",
@@ -40,7 +40,7 @@ const tiers = [
   },
   {
     name: "E-Commerce / Custom",
-    price: "Custom",
+    price: "From $5,999",
     description: "For online stores and complex web applications.",
     features: [
       "Full E-Commerce Functionality",
@@ -135,7 +135,7 @@ export default function Pricing() {
           <div className="mt-16 text-center bg-card border p-8 rounded-xl max-w-3xl mx-auto shadow-sm">
             <h3 className="text-xl font-bold mb-2">Need a custom maintenance plan?</h3>
             <p className="text-muted-foreground mb-6">
-              We offer ongoing support packages starting at $50/month for updates, backups, and security checks.
+              We offer ongoing support packages starting at $149/month for updates, backups, and security checks.
             </p>
             <Link href="/contact">
               <Button variant="secondary">Contact Us</Button>
