@@ -15,6 +15,12 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Require SESSION_SECRET in production
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET environment variable is required in production");
+  }
+
   // Session setup with PostgreSQL store
   app.use(
     session({
@@ -23,7 +29,7 @@ export async function registerRoutes(
         tableName: "sessions",
         createTableIfMissing: true,
       }),
-      secret: process.env.SESSION_SECRET || "kashtex-secret-key-2026",
+      secret: sessionSecret || "dev-only-secret-change-in-production",
       resave: false,
       saveUninitialized: false,
       cookie: {

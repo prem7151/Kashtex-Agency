@@ -26,17 +26,17 @@ export default function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/about"><a className="hover:text-primary transition-colors">About Us</a></Link></li>
-              <li><Link href="/portfolio"><a className="hover:text-primary transition-colors">Portfolio</a></Link></li>
-              <li><Link href="/contact"><a className="hover:text-primary transition-colors">Contact</a></Link></li>
-              <li><Link href="/admin/login"><a className="hover:text-primary transition-colors">Admin Login</a></Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link href="/portfolio" className="hover:text-primary transition-colors">Portfolio</Link></li>
+              <li><Link href="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link href="/admin/login" className="hover:text-primary transition-colors">Admin Login</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Kashtex1@gmail.com</li>
+              <li>kashtex1@gmail.com</li>
               <li>+91 8200369078</li>
               <li>Online-only Agency</li>
             </ul>
@@ -46,8 +46,8 @@ export default function Footer() {
         <div className="border-t mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} Kashtex. All rights reserved.</p>
           <div className="flex gap-4">
-            <Link href="/privacy"><a className="hover:text-primary">Privacy Policy</a></Link>
-            <Link href="/terms"><a className="hover:text-primary">Terms of Service</a></Link>
+            <Link href="/privacy" className="hover:text-primary">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-primary">Terms of Service</Link>
           </div>
         </div>
       </div>

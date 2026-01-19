@@ -6,7 +6,7 @@ import {
   users, contacts, appointments, chatLogs
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, ne } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 export interface IStorage {
@@ -100,7 +100,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(appointments.date, date),
         eq(appointments.time, time),
-        eq(appointments.status, "pending")
+        ne(appointments.status, "cancelled")
       ));
     return existing.length === 0;
   }
