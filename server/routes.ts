@@ -21,6 +21,9 @@ export async function registerRoutes(
     throw new Error("SESSION_SECRET environment variable is required in production");
   }
 
+  // Trust proxy for secure cookies behind Replit's proxy
+  app.set("trust proxy", 1);
+
   // Session setup with PostgreSQL store
   app.use(
     session({
@@ -30,19 +33,15 @@ export async function registerRoutes(
         createTableIfMissing: true,
       }),
       secret: sessionSecret || "dev-only-secret-change-in-production",
-      resave: false,
+      resave: true,
       saveUninitialized: false,
       cookie: {
-        secure: true,
         httpOnly: true,
-        sameSite: "none",
+        secure: "auto",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
       },
     })
   );
-
-  // Trust proxy for secure cookies behind Replit's proxy
-  app.set("trust proxy", 1);
 
   app.use(passport.initialize());
   app.use(passport.session());
@@ -93,9 +92,16 @@ export async function registerRoutes(
       }
       req.logIn(user, (err) => {
         if (err) return next(err);
-        return res.json({ 
-          success: true, 
-          user: { id: user.id, username: user.username } 
+        // Explicitly save session before responding
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Session save error:", saveErr);
+            return next(saveErr);
+          }
+          return res.json({ 
+            success: true, 
+            user: { id: user.id, username: user.username } 
+          });
         });
       });
     })(req, res, next);
