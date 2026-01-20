@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: kashtex
+    runtime: node
+    buildCommand: npm install && npm run build && npm run db:push
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: "Kashtex <onboarding@resend.dev>"
