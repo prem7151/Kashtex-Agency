@@ -14,6 +14,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { fetchWithAuth, clearToken } from "@/lib/auth";
 
 type Contact = {
   id: string;
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
   const { data: authData, isLoading: authLoading, error: authError } = useQuery({
     queryKey: ["auth"],
     queryFn: async () => {
-      const res = await fetch("/api/auth/me", { credentials: "include" });
+      const res = await fetchWithAuth("/api/auth/me");
       if (!res.ok) throw new Error("Not authenticated");
       return res.json();
     },
@@ -74,7 +75,7 @@ export default function AdminDashboard() {
   const { data: contacts = [], isLoading: contactsLoading } = useQuery<Contact[]>({
     queryKey: ["admin-contacts"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/contacts", { credentials: "include" });
+      const res = await fetchWithAuth("/api/admin/contacts");
       if (!res.ok) throw new Error("Failed to fetch contacts");
       return res.json();
     },
@@ -84,7 +85,7 @@ export default function AdminDashboard() {
   const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
     queryKey: ["admin-appointments"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/appointments", { credentials: "include" });
+      const res = await fetchWithAuth("/api/admin/appointments");
       if (!res.ok) throw new Error("Failed to fetch appointments");
       return res.json();
     },
@@ -94,7 +95,7 @@ export default function AdminDashboard() {
   const { data: chatLogs = [], isLoading: chatLogsLoading } = useQuery<ChatLog[]>({
     queryKey: ["admin-chat-logs"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/chat-logs", { credentials: "include" });
+      const res = await fetchWithAuth("/api/admin/chat-logs");
       if (!res.ok) throw new Error("Failed to fetch chat logs");
       return res.json();
     },
@@ -103,9 +104,8 @@ export default function AdminDashboard() {
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/contacts/${id}/read`, {
+      const res = await fetchWithAuth(`/api/admin/contacts/${id}/read`, {
         method: "PATCH",
-        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to mark as read");
       return res.json();
@@ -117,11 +117,10 @@ export default function AdminDashboard() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await fetch(`/api/admin/appointments/${id}/status`, {
+      const res = await fetchWithAuth(`/api/admin/appointments/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
-        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update status");
       return res.json();
@@ -134,12 +133,8 @@ export default function AdminDashboard() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Logout failed");
-      return res.json();
+      clearToken();
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.clear();

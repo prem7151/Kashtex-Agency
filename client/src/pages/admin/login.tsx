@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { setToken } from "@/lib/auth";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -20,7 +21,6 @@ export default function AdminLogin() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
-        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -28,7 +28,10 @@ export default function AdminLogin() {
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data.token) {
+        setToken(data.token);
+      }
       toast({
         title: "Login Successful",
         description: "Welcome back, Admin.",
