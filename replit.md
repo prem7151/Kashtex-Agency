@@ -1,7 +1,14 @@
 # Kashtex - Professional Web Development Agency Website
 
 ## Overview
-Kashtex is a production-ready website for a local website-building agency that provides full-stack development services to small and medium businesses. The website features a modern design with a sage/emerald green color palette, AI chatbot functionality, appointment booking system, contact forms, and an admin panel.
+Kashtex is a production-ready website for a local website-building agency. The website features a modern sage/emerald green design, AI chatbot functionality, appointment booking with double-booking prevention, contact forms, and an admin panel with analytics.
+
+## Recent Changes
+- **Jan 23, 2026**: Refactored to pure static site with client-side Supabase integration
+- Removed all serverless API routes to eliminate Node.js version conflicts
+- Created client-side Supabase client with defensive fallbacks for local development
+- Fixed all database field naming (snake_case: is_read, created_at, session_id, visitor_name, visitor_email)
+- Updated DEPLOYMENT_GUIDE.md with simplified Vercel + Supabase instructions
 
 ## Project Architecture
 
@@ -11,19 +18,26 @@ Kashtex is a production-ready website for a local website-building agency that p
 - **Styling**: Tailwind CSS with custom sage/emerald theme
 - **State Management**: TanStack Query for server state
 - **UI Components**: Radix UI primitives with shadcn/ui
+- **Database**: Supabase client (direct calls from browser)
 
-### Backend (server/)
-- **Framework**: Express.js with TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
-- **Authentication**: Passport.js with local strategy + express-session
-- **Session Store**: PostgreSQL via connect-pg-simple
+### Backend
+- **Architecture**: Static site with client-side Supabase integration
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: localStorage-based admin auth with bcrypt password verification
 
-### Database Schema (shared/schema.ts)
-- `users` - Admin accounts
-- `contacts` - Contact form submissions (leads)
-- `appointments` - Booking system with double-booking prevention
-- `chatLogs` - AI chatbot conversation history
-- `sessions` - Auth session storage
+### Key Files
+- `client/src/lib/supabase.ts` - Supabase client and all database functions
+- `client/src/pages/admin/login.tsx` - Admin login with bcrypt verification
+- `client/src/pages/admin/dashboard.tsx` - Admin panel with leads, appointments, chats, analytics
+- `client/src/components/ui/chatbot.tsx` - AI chatbot that saves to Supabase
+- `DEPLOYMENT_GUIDE.md` - Step-by-step deployment instructions
+
+### Database Schema (Supabase)
+All tables use snake_case column names:
+- `users` - Admin accounts (username, password)
+- `contacts` - Contact form submissions (is_read, created_at)
+- `appointments` - Booking system (date, time, status, created_at)
+- `chat_logs` - Chat conversations (session_id, messages, visitor_name, visitor_email, created_at)
 
 ## Key Features
 
@@ -31,66 +45,32 @@ Kashtex is a production-ready website for a local website-building agency that p
 - Modern responsive design with glassmorphism effects
 - Contact form with validation
 - Appointment booking with real-time availability checking
-- AI chatbot for visitor engagement (conversations saved to database)
+- AI chatbot for visitor engagement
 - Services, Portfolio, About, Pricing pages
 
 ### Admin Features
-- Secure login at `/admin/login`
+- Login at `/admin/login` (admin / kashtex2026)
 - Dashboard at `/admin/dashboard` showing:
   - Lead management (mark as read)
   - Appointment management (confirm/cancel)
   - Chat log review
-  - Settings
+  - Analytics with charts
 
-## Admin Setup
-The admin account is created on first run via `POST /api/admin/setup`. Default credentials should be changed after initial setup for production use.
+## Deployment
+Target: Vercel (static) + Supabase (database) + GoDaddy (kashtex.com domain)
 
-## API Endpoints
+### Environment Variables (Vercel)
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_KEY` - Supabase anon public key
 
-### Public
-- `POST /api/contacts` - Submit contact form
-- `POST /api/appointments` - Book appointment
-- `GET /api/appointments/available?date=YYYY-MM-DD` - Get available time slots
-- `POST /api/chat-logs` - Create chat session
-- `PATCH /api/chat-logs/:sessionId` - Update chat conversation
-
-### Auth
-- `POST /api/auth/login` - Admin login
-- `POST /api/auth/logout` - Admin logout
-- `GET /api/auth/me` - Check auth status
-
-### Admin (requires auth)
-- `GET /api/admin/contacts` - List all leads
-- `PATCH /api/admin/contacts/:id/read` - Mark contact as read
-- `GET /api/admin/appointments` - List all appointments
-- `PATCH /api/admin/appointments/:id/status` - Update appointment status
-- `GET /api/admin/chat-logs` - List chat conversations
-
-## Pending Features
-
-### Email Notifications
-Email notifications to kashtex1@gmail.com are not yet configured. To enable:
-1. Set up Resend integration via Replit's connector OR
-2. Add `RESEND_API_KEY` secret manually and implement email sending in `/server/routes.ts`
-
-Notifications should be sent for:
-- New contact form submissions
-- New appointment bookings
-
-### Payment Integration
-Stripe/Razorpay integration is prepared but not configured. Free to sign up - only pay per transaction (2-3%).
-
-## Analytics Dashboard
-The admin panel includes an Analytics tab showing:
-- Total leads, appointments, and chat sessions
-- Conversion rate (leads to confirmed appointments)
-- 7-day activity chart (leads and appointments over time)
-- Appointments by service (pie chart)
-- Appointment status breakdown (pending/confirmed/cancelled)
+### Local Development
+When Supabase credentials aren't configured, the app falls back to demo mode:
+- Forms simulate successful submissions
+- Admin login: admin / kashtex2026
+- Dashboard shows empty data
 
 ## Commands
 - `npm run dev` - Start development server
-- `npm run db:push` - Push schema changes to database
 - `npm run build` - Build for production
 
 ## Contact Email

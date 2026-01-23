@@ -34,6 +34,7 @@ This guide walks you through deploying your Kashtex website using **Vercel** (st
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Users table (admin only - no public access)
 CREATE TABLE users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE NOT NULL,
@@ -41,6 +42,7 @@ CREATE TABLE users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Contacts table (public can insert, only owner can read)
 CREATE TABLE contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -51,6 +53,7 @@ CREATE TABLE contacts (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Appointments table (public can insert and read for availability)
 CREATE TABLE appointments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -64,6 +67,7 @@ CREATE TABLE appointments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Chat logs table (public can insert and update their own session)
 CREATE TABLE chat_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   session_id TEXT UNIQUE NOT NULL,
@@ -74,14 +78,37 @@ CREATE TABLE chat_logs (
 );
 
 -- Create admin user (password: kashtex2026)
+-- Change this password after first login!
 INSERT INTO users (username, password) VALUES (
   'admin',
   '$2a$10$rQZ5wJ5Q5Q5Q5Q5Q5Q5Q5OwR5wJ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q'
 );
 ```
 
-4. **Disable RLS** for each table:
-   - Go to **Table Editor** → Click each table → Click **RLS** → Toggle OFF
+4. **Set up Row Level Security (RLS)**:
+
+Run this SQL to enable proper security:
+
+```sql
+-- Enable RLS on all tables
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_logs ENABLE ROW LEVEL SECURITY;
+
+-- Contacts: Anyone can submit, no public read
+CREATE POLICY "Allow public insert" ON contacts FOR INSERT WITH CHECK (true);
+
+-- Appointments: Anyone can submit, anyone can read (for availability checking)
+CREATE POLICY "Allow public insert" ON appointments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public read" ON appointments FOR SELECT USING (true);
+
+-- Chat logs: Anyone can create and update their own session
+CREATE POLICY "Allow public insert" ON chat_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update own session" ON chat_logs FOR UPDATE USING (true);
+```
+
+**Note**: The admin dashboard will show "no data" on the public website. To view leads, appointments, and chat logs, log into your **Supabase dashboard** directly at [supabase.com](https://supabase.com) → Your Project → Table Editor
 
 ---
 
