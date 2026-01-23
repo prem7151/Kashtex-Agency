@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
+import { submitContact, bookAppointment, getAvailableSlots } from "@/lib/supabase";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -57,25 +58,15 @@ export default function Contact() {
     queryFn: async () => {
       if (!selectedDate) return null;
       const dateStr = selectedDate.toISOString().split("T")[0];
-      const res = await fetch(`/api/appointments/available?date=${dateStr}`);
-      if (!res.ok) throw new Error("Failed to fetch available slots");
-      return res.json() as Promise<{ availableSlots: string[]; bookedTimes: string[] }>;
+      const slots = await getAvailableSlots(dateStr);
+      return { availableSlots: slots, bookedTimes: [] };
     },
     enabled: !!selectedDate,
   });
 
   const contactMutation = useMutation({
     mutationFn: async (values: z.infer<typeof contactSchema>) => {
-      const res = await fetch("/api/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to submit");
-      }
-      return res.json();
+      return await submitContact(values);
     },
     onSuccess: () => {
       toast({
@@ -95,19 +86,15 @@ export default function Contact() {
 
   const appointmentMutation = useMutation({
     mutationFn: async (values: z.infer<typeof appointmentSchema>) => {
-      const res = await fetch("/api/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...values,
-          date: values.date.toISOString().split("T")[0],
-        }),
+      return await bookAppointment({
+        name: values.name,
+        email: values.email,
+        phone: '',
+        service: values.service,
+        date: values.date.toISOString().split("T")[0],
+        time: values.time,
+        details: values.details,
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to book appointment");
-      }
-      return res.json();
     },
     onSuccess: (_, variables) => {
       toast({

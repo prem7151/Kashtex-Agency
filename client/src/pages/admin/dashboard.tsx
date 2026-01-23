@@ -14,7 +14,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { fetchWithAuth, clearToken } from "@/lib/auth";
+import { isAdminAuthenticated, adminLogout, getContacts, getAppointments, getChatLogs, markContactRead, updateAppointmentStatus } from "@/lib/supabase";
 
 type Contact = {
   id: string;
@@ -22,8 +22,8 @@ type Contact = {
   email: string;
   subject: string;
   message: string;
-  isRead: boolean;
-  createdAt: string;
+  is_read: boolean;
+  created_at: string;
 };
 
 type Appointment = {
@@ -35,17 +35,16 @@ type Appointment = {
   time: string;
   details: string | null;
   status: string;
-  createdAt: string;
+  created_at: string;
 };
 
 type ChatLog = {
   id: string;
-  sessionId: string;
-  visitorName: string | null;
-  visitorEmail: string | null;
+  session_id: string;
+  visitor_name: string | null;
+  visitor_email: string | null;
   messages: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
 };
 
 export default function AdminDashboard() {
@@ -56,59 +55,42 @@ export default function AdminDashboard() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedChatLog, setSelectedChatLog] = useState<ChatLog | null>(null);
 
-  const { data: authData, isLoading: authLoading, error: authError } = useQuery({
-    queryKey: ["auth"],
-    queryFn: async () => {
-      const res = await fetchWithAuth("/api/auth/me");
-      if (!res.ok) throw new Error("Not authenticated");
-      return res.json();
-    },
-    retry: false,
-  });
+  const isAuthenticated = isAdminAuthenticated();
+  const authLoading = false;
 
   useEffect(() => {
-    if (authError) {
+    if (!isAuthenticated) {
       setLocation("/admin/login");
     }
-  }, [authError, setLocation]);
+  }, [isAuthenticated, setLocation]);
 
   const { data: contacts = [], isLoading: contactsLoading } = useQuery<Contact[]>({
     queryKey: ["admin-contacts"],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/contacts");
-      if (!res.ok) throw new Error("Failed to fetch contacts");
-      return res.json();
+      return await getContacts();
     },
-    enabled: !!authData,
+    enabled: isAuthenticated,
   });
 
   const { data: appointments = [], isLoading: appointmentsLoading } = useQuery<Appointment[]>({
     queryKey: ["admin-appointments"],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/appointments");
-      if (!res.ok) throw new Error("Failed to fetch appointments");
-      return res.json();
+      return await getAppointments();
     },
-    enabled: !!authData,
+    enabled: isAuthenticated,
   });
 
   const { data: chatLogs = [], isLoading: chatLogsLoading } = useQuery<ChatLog[]>({
     queryKey: ["admin-chat-logs"],
     queryFn: async () => {
-      const res = await fetchWithAuth("/api/admin/chat-logs");
-      if (!res.ok) throw new Error("Failed to fetch chat logs");
-      return res.json();
+      return await getChatLogs();
     },
-    enabled: !!authData,
+    enabled: isAuthenticated,
   });
 
   const markReadMutation = useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetchWithAuth(`/api/admin/contacts/${id}/read`, {
-        method: "PATCH",
-      });
-      if (!res.ok) throw new Error("Failed to mark as read");
-      return res.json();
+      return await markContactRead(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-contacts"] });
@@ -117,13 +99,7 @@ export default function AdminDashboard() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await fetchWithAuth(`/api/admin/appointments/${id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      return res.json();
+      return await updateAppointmentStatus(id, status);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
@@ -131,16 +107,11 @@ export default function AdminDashboard() {
     },
   });
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      clearToken();
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      setLocation("/admin/login");
-    },
-  });
+  const handleLogout = () => {
+    adminLogout();
+    queryClient.clear();
+    setLocation("/admin/login");
+  };
 
   if (authLoading) {
     return (
@@ -150,11 +121,11 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!authData) {
+  if (!isAuthenticated) {
     return null;
   }
 
-  const unreadContacts = contacts.filter(c => !c.isRead).length;
+  const unreadContacts = contacts.filter(c => !c.is_read).length;
   const pendingAppointments = appointments.filter(a => a.status === "pending").length;
 
   return (
@@ -190,8 +161,7 @@ export default function AdminDashboard() {
           <Button 
             variant="outline" 
             className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
+            onClick={handleLogout}
             data-testid="button-logout"
           >
             <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -278,7 +248,7 @@ export default function AdminDashboard() {
                             <p className="font-medium text-sm">{contact.name}</p>
                             <p className="text-xs text-muted-foreground">{contact.subject}</p>
                           </div>
-                          {!contact.isRead && <Badge variant="destructive" className="text-xs">New</Badge>}
+                          {!contact.is_read && <Badge variant="destructive" className="text-xs">New</Badge>}
                         </div>
                       ))}
                     </div>
@@ -343,10 +313,10 @@ export default function AdminDashboard() {
                             <span className="text-xs text-muted-foreground">{contact.email}</span>
                           </TableCell>
                           <TableCell>{contact.subject}</TableCell>
-                          <TableCell>{format(new Date(contact.createdAt), "MMM d, yyyy")}</TableCell>
+                          <TableCell>{format(new Date(contact.created_at), "MMM d, yyyy")}</TableCell>
                           <TableCell>
-                            <Badge variant={contact.isRead ? "outline" : "destructive"}>
-                              {contact.isRead ? "Read" : "New"}
+                            <Badge variant={contact.is_read ? "outline" : "destructive"}>
+                              {contact.is_read ? "Read" : "New"}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right space-x-1">
@@ -355,7 +325,7 @@ export default function AdminDashboard() {
                               variant="outline"
                               onClick={() => {
                                 setSelectedContact(contact);
-                                if (!contact.isRead) {
+                                if (!contact.is_read) {
                                   markReadMutation.mutate(contact.id);
                                 }
                               }}
@@ -387,9 +357,9 @@ export default function AdminDashboard() {
                     <p className="whitespace-pre-wrap bg-muted p-3 rounded-lg text-sm">{selectedContact?.message}</p>
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Received: {selectedContact && format(new Date(selectedContact.createdAt), "MMM d, yyyy h:mm a")}</span>
-                    <Badge variant={selectedContact?.isRead ? "outline" : "destructive"}>
-                      {selectedContact?.isRead ? "Read" : "New"}
+                    <span>Received: {selectedContact && format(new Date(selectedContact.created_at), "MMM d, yyyy h:mm a")}</span>
+                    <Badge variant={selectedContact?.is_read ? "outline" : "destructive"}>
+                      {selectedContact?.is_read ? "Read" : "New"}
                     </Badge>
                   </div>
                 </div>
@@ -499,12 +469,12 @@ export default function AdminDashboard() {
                         return (
                           <TableRow key={log.id}>
                             <TableCell className="font-medium">
-                              {log.visitorName || "Anonymous"}<br/>
-                              <span className="text-xs text-muted-foreground">{log.visitorEmail || "No email"}</span>
+                              {log.visitor_name || "Anonymous"}<br/>
+                              <span className="text-xs text-muted-foreground">{log.visitor_email || "No email"}</span>
                             </TableCell>
-                            <TableCell className="font-mono text-xs">{log.sessionId.slice(0, 8)}...</TableCell>
+                            <TableCell className="font-mono text-xs">{log.session_id.slice(0, 8)}...</TableCell>
                             <TableCell>{messageCount} messages</TableCell>
-                            <TableCell>{format(new Date(log.createdAt), "MMM d, yyyy h:mm a")}</TableCell>
+                            <TableCell>{format(new Date(log.created_at), "MMM d, yyyy h:mm a")}</TableCell>
                             <TableCell className="text-right">
                               <Button 
                                 size="sm" 
@@ -528,7 +498,7 @@ export default function AdminDashboard() {
                 <DialogHeader>
                   <DialogTitle>Chat Conversation</DialogTitle>
                   <DialogDescription>
-                    {selectedChatLog?.visitorName || "Anonymous"} - {format(selectedChatLog ? new Date(selectedChatLog.createdAt) : new Date(), "MMM d, yyyy h:mm a")}
+                    {selectedChatLog?.visitor_name || "Anonymous"} - {format(selectedChatLog ? new Date(selectedChatLog.created_at) : new Date(), "MMM d, yyyy h:mm a")}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-y-auto space-y-3 py-4">
@@ -566,8 +536,8 @@ export default function AdminDashboard() {
                 const fullDate = format(date, "yyyy-MM-dd");
                 return {
                   name: dateStr,
-                  leads: contacts.filter(c => format(new Date(c.createdAt), "yyyy-MM-dd") === fullDate).length,
-                  appointments: appointments.filter(a => format(new Date(a.createdAt), "yyyy-MM-dd") === fullDate).length,
+                  leads: contacts.filter(c => format(new Date(c.created_at), "yyyy-MM-dd") === fullDate).length,
+                  appointments: appointments.filter(a => format(new Date(a.created_at), "yyyy-MM-dd") === fullDate).length,
                 };
               });
 
