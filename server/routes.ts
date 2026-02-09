@@ -163,7 +163,8 @@ export async function registerRoutes(
 
   app.patch("/api/admin/contacts/:id/read", requireAuth, async (req, res) => {
     try {
-      const contact = await storage.markContactRead(req.params.id);
+      const id = req.params.id as string;
+      const contact = await storage.markContactRead(id);
       if (!contact) {
         return res.status(404).json({ message: "Contact not found" });
       }
@@ -249,7 +250,8 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid status" });
       }
       
-      const appointment = await storage.updateAppointmentStatus(req.params.id, status);
+      const id = req.params.id as string;
+      const appointment = await storage.updateAppointmentStatus(id, status);
       if (!appointment) {
         return res.status(404).json({ message: "Appointment not found" });
       }

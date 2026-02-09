@@ -18,8 +18,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { submitContact, bookAppointment, getAvailableSlots } from "@/lib/supabase";
+import { useState } from "react";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -58,15 +57,25 @@ export default function Contact() {
     queryFn: async () => {
       if (!selectedDate) return null;
       const dateStr = selectedDate.toISOString().split("T")[0];
-      const slots = await getAvailableSlots(dateStr);
-      return { availableSlots: slots, bookedTimes: [] };
+      const res = await fetch(`/api/appointments/available?date=${dateStr}`);
+      if (!res.ok) throw new Error("Failed to fetch available slots");
+      return res.json();
     },
     enabled: !!selectedDate,
   });
 
   const contactMutation = useMutation({
     mutationFn: async (values: z.infer<typeof contactSchema>) => {
-      return await submitContact(values);
+      const res = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to submit contact form');
+      }
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -86,15 +95,24 @@ export default function Contact() {
 
   const appointmentMutation = useMutation({
     mutationFn: async (values: z.infer<typeof appointmentSchema>) => {
-      return await bookAppointment({
-        name: values.name,
-        email: values.email,
-        phone: '',
-        service: values.service,
-        date: values.date.toISOString().split("T")[0],
-        time: values.time,
-        details: values.details,
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          phone: '',
+          service: values.service,
+          date: values.date.toISOString().split("T")[0],
+          time: values.time,
+          details: values.details,
+        }),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to book appointment');
+      }
+      return res.json();
     },
     onSuccess: (_, variables) => {
       toast({
@@ -359,7 +377,7 @@ export default function Contact() {
                                         {timeSlots.length === 0 ? (
                                           <SelectItem value="none" disabled>No slots available</SelectItem>
                                         ) : (
-                                          timeSlots.map(slot => (
+                                          timeSlots.map((slot: string) => (
                                             <SelectItem key={slot} value={slot}>{slot}</SelectItem>
                                           ))
                                         )}
