@@ -154,35 +154,23 @@ export async function updateChatLog(sessionId: string, messages: any[], visitorN
   return data;
 }
 
-export async function adminLogin(username: string, password: string) {
-  if (!isConfigured()) {
-    if (username === 'admin' && password === 'kashtex2026') {
-      localStorage.setItem('admin_authenticated', 'true');
-      localStorage.setItem('admin_user', JSON.stringify({ id: 'demo', username: 'admin' }));
-      return { id: 'demo', username: 'admin' };
-    }
-    throw new Error('Invalid credentials');
-  }
-  
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .single();
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD_HASH = '$2b$10$VKBMSCajJv4ssBAJWmDnCuDhsbDMQsW.qd7L0u/CuCpKvoIW/iAxG';
 
-  if (error || !user) {
+export async function adminLogin(username: string, password: string) {
+  if (username !== ADMIN_USERNAME) {
     throw new Error('Invalid credentials');
   }
 
   const bcrypt = await import('bcryptjs');
-  const valid = await bcrypt.compare(password, user.password);
+  const valid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
   if (!valid) {
     throw new Error('Invalid credentials');
   }
 
   localStorage.setItem('admin_authenticated', 'true');
-  localStorage.setItem('admin_user', JSON.stringify({ id: user.id, username: user.username }));
-  return { id: user.id, username: user.username };
+  localStorage.setItem('admin_user', JSON.stringify({ id: 'admin', username: ADMIN_USERNAME }));
+  return { id: 'admin', username: ADMIN_USERNAME };
 }
 
 export function adminLogout() {

@@ -34,16 +34,16 @@ This guide walks you through deploying your Kashtex website using **Vercel** (st
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (admin only - no public access)
-CREATE TABLE users (
+-- Users table (admin only)
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Contacts table (public can insert, only owner can read)
-CREATE TABLE contacts (
+-- Contacts table
+CREATE TABLE IF NOT EXISTS contacts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -53,8 +53,8 @@ CREATE TABLE contacts (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Appointments table (public can insert and read for availability)
-CREATE TABLE appointments (
+-- Appointments table
+CREATE TABLE IF NOT EXISTS appointments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   email TEXT NOT NULL,
@@ -67,8 +67,8 @@ CREATE TABLE appointments (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Chat logs table (public can insert and update their own session)
-CREATE TABLE chat_logs (
+-- Chat logs table
+CREATE TABLE IF NOT EXISTS chat_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   session_id TEXT UNIQUE NOT NULL,
   messages TEXT NOT NULL,
@@ -76,43 +76,52 @@ CREATE TABLE chat_logs (
   visitor_email TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- Create admin user (password: kashtex2026)
--- Change this password after first login!
-INSERT INTO users (username, password) VALUES (
-  'admin',
-  '$2a$10$rQZ5wJ5Q5Q5Q5Q5Q5Q5Q5OwR5wJ5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q'
-);
 ```
 
-4. **Set up Row Level Security (RLS)**:
+---
 
-Run this SQL to enable proper security:
+## Step 4: Fix Row Level Security (RLS) Policies
+
+This is critical! Without these policies, your forms won't work. Run this SQL:
 
 ```sql
 -- Enable RLS on all tables
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_logs ENABLE ROW LEVEL SECURITY;
 
--- Contacts: Anyone can submit, no public read
-CREATE POLICY "Allow public insert" ON contacts FOR INSERT WITH CHECK (true);
+-- Drop existing policies (in case they exist)
+DROP POLICY IF EXISTS "Allow public insert" ON contacts;
+DROP POLICY IF EXISTS "Allow public read" ON contacts;
+DROP POLICY IF EXISTS "Allow public update" ON contacts;
+DROP POLICY IF EXISTS "Allow public insert" ON appointments;
+DROP POLICY IF EXISTS "Allow public read" ON appointments;
+DROP POLICY IF EXISTS "Allow public update" ON appointments;
+DROP POLICY IF EXISTS "Allow public insert" ON chat_logs;
+DROP POLICY IF EXISTS "Allow public read" ON chat_logs;
+DROP POLICY IF EXISTS "Allow update own session" ON chat_logs;
+DROP POLICY IF EXISTS "Allow public update" ON chat_logs;
 
--- Appointments: Anyone can submit, anyone can read (for availability checking)
+-- CONTACTS: Public can submit, admin can read and update
+CREATE POLICY "Allow public insert" ON contacts FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public read" ON contacts FOR SELECT USING (true);
+CREATE POLICY "Allow public update" ON contacts FOR UPDATE USING (true);
+
+-- APPOINTMENTS: Public can submit and read (for availability), admin can update status
 CREATE POLICY "Allow public insert" ON appointments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Allow public read" ON appointments FOR SELECT USING (true);
+CREATE POLICY "Allow public update" ON appointments FOR UPDATE USING (true);
 
--- Chat logs: Anyone can create and update their own session
+-- CHAT LOGS: Public can create, read, and update conversations
 CREATE POLICY "Allow public insert" ON chat_logs FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update own session" ON chat_logs FOR UPDATE USING (true);
-```
+CREATE POLICY "Allow public read" ON chat_logs FOR SELECT USING (true);
+CREATE POLICY "Allow public update" ON chat_logs FOR UPDATE USING (true);
 
-**Note**: The admin dashboard will show "no data" on the public website. To view leads, appointments, and chat logs, log into your **Supabase dashboard** directly at [supabase.com](https://supabase.com) → Your Project → Table Editor
+```
 
 ---
 
-## Step 4: Push Code to GitHub
+## Step 6: Push Code to GitHub
 
 1. In Replit, click the **Git** icon (left sidebar)
 2. Commit all changes
@@ -120,7 +129,7 @@ CREATE POLICY "Allow update own session" ON chat_logs FOR UPDATE USING (true);
 
 ---
 
-## Step 5: Deploy to Vercel
+## Step 7: Deploy to Vercel
 
 1. Go to [vercel.com](https://vercel.com) and sign up/log in with GitHub
 2. Click **Add New** → **Project**
@@ -139,7 +148,7 @@ CREATE POLICY "Allow update own session" ON chat_logs FOR UPDATE USING (true);
 
 ---
 
-## Step 6: Connect Your Domain (kashtex.com)
+## Step 8: Connect Your Domain (kashtex.com)
 
 1. In Vercel, go to your project → **Settings** → **Domains**
 2. Click **Add Domain** and enter `kashtex.com`
@@ -169,22 +178,10 @@ After deployment, you can log in to the admin dashboard:
 
 ---
 
-## Email Notifications (Optional)
-
-To enable email notifications when someone submits a contact form:
-
-1. Sign up at [resend.com](https://resend.com) (free)
-2. Get your API key
-3. In your Supabase project, you can set up Edge Functions to send emails
-
-Note: For the initial launch, contact form data is stored in the database and visible in your admin dashboard.
-
----
-
 ## Summary
 
-- **Frontend**: Hosted on Vercel (static site)
-- **Database**: Supabase (PostgreSQL)
+- **Frontend**: Hosted on Vercel (static site, free)
+- **Database**: Supabase (PostgreSQL, free tier)
 - **Domain**: kashtex.com via GoDaddy DNS
 
 Your Kashtex website should now be live!
