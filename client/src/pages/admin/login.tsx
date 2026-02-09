@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { adminLogin } from "@/lib/supabase";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -16,20 +17,9 @@ export default function AdminLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { username: string; password: string }) => {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: credentials.username, password: credentials.password }),
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Invalid credentials');
-      }
-      return res.json();
+      return await adminLogin(credentials.username, credentials.password);
     },
     onSuccess: () => {
-      localStorage.setItem('admin_authenticated', 'true');
       toast({
         title: "Login Successful",
         description: "Welcome back, Admin.",

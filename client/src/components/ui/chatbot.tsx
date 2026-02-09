@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageSquare, Send, X, Bot } from "lucide-react";
+import { createChatSession, updateChatLog } from "@/lib/supabase";
 
 type Message = {
   id: string;
@@ -156,22 +157,25 @@ export default function Chatbot() {
     }
   }, [messages, isOpen]);
 
+  const [chatSessionCreated, setChatSessionCreated] = useState(false);
+
   const saveConversation = async (updatedMessages: Message[]) => {
     try {
-      const res = await fetch(`/api/chat-logs/${sessionId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: updatedMessages.map(m => ({
-            role: m.role,
-            content: m.content,
-            timestamp: m.timestamp.toISOString(),
-          })),
-        }),
-      });
-      if (!res.ok) {
-        console.error("Failed to save conversation:", res.status);
+      const messagesData = updatedMessages.map(m => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp.toISOString(),
+      }));
+
+      if (!chatSessionCreated) {
+        try {
+          await createChatSession(sessionId);
+        } catch {
+        }
+        setChatSessionCreated(true);
       }
+      
+      await updateChatLog(sessionId, messagesData);
     } catch (error) {
       console.error("Failed to save conversation:", error);
     }
